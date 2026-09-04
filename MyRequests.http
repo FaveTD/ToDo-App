@@ -1,0 +1,11 @@
+GET http://localhost:5002/todos
+
+####
+POST http://localhost:5002/todos content-type: application/json
+
+{
+    "id": 1,
+    "name": "Write demo",
+    "dueDate": "2026-07-02",
+    "isCompleted": false
+}

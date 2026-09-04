@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks & Todo App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+
+    <div class="max-w-2xl mx-auto px-4 py-12">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">✨ My Tasks</h1>
+            <p class="text-slate-500 mt-1">Organize your goals, lifestyle, and daily wins.</p>
+        </header>
+
+        <!-- Task Input Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Add a New Todo</h2>
+            <form id="todoForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Task Name</label>
+                    <input type="text" id="taskName" required placeholder="e.g., Shoot new content..." 
+                        class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Due Date</label>
+                    <input type="date" id="taskDueDate" required 
+                        class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div id="errorBanner" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm"></div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2 rounded-xl transition duration-200">
+                        Add Task
+                    </button>
+                    <button type="button" id="clearAllBtn" class="text-slate-400 hover:text-rose-600 text-sm font-medium transition duration-200">
+                        Clear All Tasks
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Task List Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-slate-700">Task Overview</h2>
+                <span id="taskCount" class="text-xs font-bold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full">0 Tasks</span>
+            </div>
+
+            <div id="loadingState" class="text-center py-8 text-slate-400">Loading your tasks...</div>
+            
+            <ul id="todoList" class="divide-y divide-slate-100"></ul>
+
+            <div id="emptyState" class="hidden text-center py-12">
+                <p class="text-slate-400 text-sm">No tasks found. Time to add something fresh! 🎉</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script to handle API communication -->
+    <script>
+        const API_URL = '/todos';
+
+        async function fetchTodos() {
+            try {
+                const response = await fetch(API_URL);
+                const todos = await response.json();
+                renderTodos(todos);
+            } catch (err) {
+                console.error("Failed to fetch todos:", err);
+                document.getElementById('loadingState').innerText = "Could not connect to the API.";
+            }
+        }
+
+        function renderTodos(todos) {
+            const list = document.getElementById('todoList');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+            const taskCount = document.getElementById('taskCount');
+
+            loadingState.style.display = 'none';
+            list.innerHTML = '';
+            taskCount.innerText = `${todos.length} ${todos.length === 1 ? 'Task' : 'Tasks'}`;
+
+            if (todos.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            } else {
+                emptyState.style.display = 'none';
+            }
+
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.className = "py-4 flex items-center justify-between group";
+
+                const formattedDate = new Date(todo.dueDate).toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+
+                li.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" ${todo.isCompleted ? 'checked' : ''} 
+                            onchange="toggleTaskStatus(${todo.id}, '${escapeHtml(todo.name)}', '${todo.dueDate}', ${!todo.isCompleted})"
+                            class="w-5 h-5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
+                        <div>
+                            <p class="font-medium ${todo.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(todo.name)}</p>
+                            <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">Due: ${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="fetchSingleTodo(${todo.id})" class="text-xs text-indigo-600 hover:underline bg-indigo-50 px-2.5 py-1 rounded-lg">View Details</button>
+                        <button onclick="deleteTodo(${todo.id})" class="text-slate-300 hover:text-rose-600 p-2 rounded-lg transition duration-200">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        async function toggleTaskStatus(id, name, dueDate, newStatus) {
+            const updatedTask = { name, dueDate, isCompleted: newStatus };
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedTask)
+                });
+                if (response.ok) fetchTodos();
+            } catch (err) {
+                console.error("Failed to update task:", err);
+            }
+        }
+
+        async function fetchSingleTodo(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                if (response.ok) {
+                    const task = await response.json();
+                    alert(`Task Details:\nName: ${task.name}\nDue: ${new Date(task.dueDate).toLocaleDateString()}\nCompleted: ${task.isCompleted}`);
+                }
+            } catch (err) {
+                console.error("Failed to fetch single task:", err);
+            }
+        }
+
+        document.getElementById('todoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorBanner = document.getElementById('errorBanner');
+            errorBanner.classList.add('hidden');
+
+            const name = document.getElementById('taskName').value;
+            const dueDate = document.getElementById('taskDueDate').value;
+
+            const newTask = { name: name, dueDate: new Date(dueDate).toISOString(), isCompleted: false };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTask)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    let errorMessage = "Validation failed.";
+                    if (errorData.errors) errorMessage = Object.values(errorData.errors).flat().join(" | ");
+                    errorBanner.innerText = errorMessage;
+                    errorBanner.classList.remove('hidden');
+                    return;
+                }
+
+                document.getElementById('taskName').value = '';
+                document.getElementById('taskDueDate').value = '';
+                fetchTodos();
+            } catch (err) {
+                console.error("Network error:", err);
+            }
+        });
+
+        async function deleteTodo(id) {
+            try {
+                await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                fetchTodos();
+            } catch (err) { console.error(err); }
+        }
+
+        document.getElementById('clearAllBtn').addEventListener('click', async () => {
+            if (confirm("Wipe all tasks?")) {
+                try {
+                    await fetch(API_URL, { method: 'DELETE' });
+                    fetchTodos();
+                } catch (err) { console.error(err); }
+            }
+        });
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        fetchTodos();
+    </script>
+</body>
+</html>
