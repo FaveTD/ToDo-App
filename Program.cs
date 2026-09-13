@@ -62,7 +62,7 @@ app.MapPost("/todos/", (Todo task, ITaskService service) =>
     var taskArgument = context.GetArgument<Todo>(0);
     var errors = new Dictionary<string, string[]>();
 
-    if (taskArgument.DueDate < DateTime.UtcNow)
+    if (taskArgument.DueDate < DateTime.UtcNow.Date)
     {
         errors.Add(nameof(Todo.DueDate), ["Cannot have due date in the past"]);
     }

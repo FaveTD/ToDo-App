@@ -33,4 +33,5 @@ C:\Users\taiwoadanini\Documents\.NET\MyNewApp\obj\Debug\net10.0\MyNewApp.csproj.
 C:\Users\taiwoadanini\Documents\.NET\MyNewApp\obj\Debug\net10.0\MyNewApp.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\taiwoadanini\Documents\.NET\MyNewApp\obj\Debug\net10.0\MyNewApp.csproj.Up2Date
 C:\Users\taiwoadanini\Documents\.NET\MyNewApp\bin\Debug\net10.0\MyNewApp.staticwebassets.runtime.json
-C:\Users\taiwoadanini\Documents\.NET\MyNewApp\obj\Debug\net10.0\compressed\dy9wlyzv6t-{0}-qma6ruws1h-qma6ruws1h.gz
+C:\Users\taiwoadanini\Documents\.NET\MyNewApp\obj\Debug\net10.0\MyNewApp.sourcelink.json
+C:\Users\taiwoadanini\Documents\.NET\MyNewApp\obj\Debug\net10.0\compressed\dy9wlyzv6t-{0}-9zdrwtfnsy-9zdrwtfnsy.gz

@@ -14,9 +14,8 @@
             <p class="text-slate-500 mt-1">Organize your goals, lifestyle, and daily wins.</p>
         </header>
 
-        <!-- Task Input Card -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-            <h2 class="text-lg font-semibold mb-4 text-slate-700">Add a New Todo</h2>
+            <h2 id="formTitle" class="text-lg font-semibold mb-4 text-slate-700">Add a New Todo</h2>
             <form id="todoForm" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-600 mb-1">Task Name</label>
@@ -31,7 +30,7 @@
                 <div id="errorBanner" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm"></div>
 
                 <div class="flex items-center justify-between pt-2">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2 rounded-xl transition duration-200">
+                    <button type="submit" id="submitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2 rounded-xl transition duration-200">
                         Add Task
                     </button>
                     <button type="button" id="clearAllBtn" class="text-slate-400 hover:text-rose-600 text-sm font-medium transition duration-200">
@@ -41,7 +40,7 @@
             </form>
         </div>
 
-        <!-- Task List Section -->
+        <
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-slate-700">Task Overview</h2>
@@ -58,9 +57,9 @@
         </div>
     </div>
 
-    <!-- Script to handle API communication -->
     <script>
         const API_URL = '/todos';
+        let editingId = null; 
 
         async function fetchTodos() {
             try {
@@ -98,6 +97,8 @@
                     month: 'short', day: 'numeric', year: 'numeric'
                 });
 
+                const rawDate = todo.dueDate.split('T')[0];
+
                 li.innerHTML = `
                     <div class="flex items-center space-x-3">
                         <input type="checkbox" ${todo.isCompleted ? 'checked' : ''} 
@@ -109,12 +110,22 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
+                        <button onclick="startEdit(${todo.id}, '${escapeHtml(todo.name)}', '${rawDate}', ${todo.isCompleted})" class="text-xs text-amber-600 hover:underline bg-amber-50 px-2.5 py-1 rounded-lg">Edit</button>
                         <button onclick="fetchSingleTodo(${todo.id})" class="text-xs text-indigo-600 hover:underline bg-indigo-50 px-2.5 py-1 rounded-lg">View Details</button>
                         <button onclick="deleteTodo(${todo.id})" class="text-slate-300 hover:text-rose-600 p-2 rounded-lg transition duration-200">🗑️</button>
                     </div>
                 `;
                 list.appendChild(li);
             });
+        }
+
+        function startEdit(id, name, dueDate, isCompleted) {
+            editingId = id;
+            document.getElementById('taskName').value = name;
+            document.getElementById('taskDueDate').value = dueDate;
+            document.getElementById('formTitle').innerText = "Edit Todo";
+            document.getElementById('submitBtn').innerText = "Update Task";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function toggleTaskStatus(id, name, dueDate, newStatus) {
@@ -151,13 +162,20 @@
             const name = document.getElementById('taskName').value;
             const dueDate = document.getElementById('taskDueDate').value;
 
-            const newTask = { name: name, dueDate: new Date(dueDate).toISOString(), isCompleted: false };
+            let url = API_URL;
+            let method = 'POST';
+            let payload = { name: name, dueDate: new Date(dueDate).toISOString(), isCompleted: false };
+
+            if (editingId !== null) {
+                url = `${API_URL}/${editingId}`;
+                method = 'PUT';
+            }
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
+                const response = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newTask)
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
@@ -171,6 +189,10 @@
 
                 document.getElementById('taskName').value = '';
                 document.getElementById('taskDueDate').value = '';
+                editingId = null;
+                document.getElementById('formTitle').innerText = "Add a New Todo";
+                document.getElementById('submitBtn').innerText = "Add Task";
+
                 fetchTodos();
             } catch (err) {
                 console.error("Network error:", err);
