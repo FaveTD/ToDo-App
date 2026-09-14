@@ -5,7 +5,7 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddSingleton<ITaskService>(new InMemoryTaskService());
+builder.Services.AddSingleton<ITaskService>(new IMemoryTaskService());
 
 var app = builder.Build();
 app.UseStaticFiles();
@@ -91,7 +91,7 @@ interface ITaskService
     Todo? UpdateTodo(int id, Todo task);
 }
 
-class InMemoryTaskService : ITaskService
+class IMemoryTaskService : ITaskService
 {
     private readonly List<Todo> _todos = [];
     private int _nextId = 1;
